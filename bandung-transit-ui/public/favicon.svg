@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bt-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <!-- Squircle App Badge -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bt-bg)"/>
+  <!-- Transit Route Accent Curve -->
+  <path d="M12 50h40" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" opacity="0.45"/>
+  <!-- Side Mirrors -->
+  <rect x="12.5" y="21" width="3.5" height="8" rx="1.5" fill="#ffffff"/>
+  <rect x="48" y="21" width="3.5" height="8" rx="1.5" fill="#ffffff"/>
+  <!-- Modern Transit Vehicle Body -->
+  <rect x="17" y="13" width="30" height="32" rx="6" fill="#ffffff"/>
+  <!-- Top Corridor Header Strip -->
+  <rect x="23" y="16" width="18" height="3" rx="1.5" fill="#2563eb"/>
+  <!-- Panoramic Windshield -->
+  <rect x="20" y="21" width="24" height="12.5" rx="2.5" fill="#0f172a"/>
+  <path d="M22 23.5h8l-4 7.5h-4z" fill="#38bdf8" opacity="0.35"/>
+  <!-- Dual Amber Headlights -->
+  <circle cx="23.5" cy="38.5" r="2.6" fill="#f59e0b"/>
+  <circle cx="40.5" cy="38.5" r="2.6" fill="#f59e0b"/>
+  <!-- Center Grille -->
+  <rect x="28.5" y="37.3" width="7" height="2.4" rx="1.2" fill="#94a3b8"/>
+  <!-- Wheels -->
+  <rect x="20" y="45" width="6" height="4.5" rx="2" fill="#0f172a"/>
+  <rect x="38" y="45" width="6" height="4.5" rx="2" fill="#0f172a"/>
+  <!-- Live Real-Time Emerald Pulse Dot -->
+  <circle cx="50" cy="14" r="6" fill="#10b981" stroke="#ffffff" stroke-width="2.2"/>
+</svg>

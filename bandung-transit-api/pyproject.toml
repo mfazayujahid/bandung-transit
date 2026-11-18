@@ -1,0 +1,23 @@
+[project]
+name = "bandung-transit-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.5",
+    "geoalchemy2>=0.21.0",
+    "httpx>=0.28.1",
+    "networkx>=3.7",
+    "polyline>=2.0.5",
+    "psycopg2-binary>=2.9.13",
+    "pydantic-settings>=2.16.2",
+    "python-socketio[asyncio-client]>=5.18.1",
+    "sqlalchemy>=2.1.8",
+    "uvicorn[standard]>=0.54.0",
+    "websockets>=17.4",
+]
+
+[tool.pyrefly]
+search-path = ["."]
+

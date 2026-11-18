@@ -1,0 +1,19 @@
+{
+  "name": "bandung-transit-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Bandung Transit multi-modal BRT & Commuter Line routing monorepo (FastAPI + PostGIS + React + MapLibre GL)",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:https": "node scripts/dev.mjs --https",
+    "dev:api": "uv --directory bandung-transit-api run python -m uvicorn app.main:app --reload --port 8000",
+    "dev:ui": "npm --prefix bandung-transit-ui run dev",
+    "dev:ui:https": "npm --prefix bandung-transit-ui run dev:https",
+    "build": "npm --prefix bandung-transit-ui run build",
+    "lint": "npm --prefix bandung-transit-ui run lint",
+    "setup:api": "uv --directory bandung-transit-api sync",
+    "setup:ui": "npm --prefix bandung-transit-ui install",
+    "setup": "npm run setup:api && npm run setup:ui"
+  }
+}
