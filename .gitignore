@@ -4,6 +4,7 @@
 .agents/
 .agent/
 AGENTS.md
+DEPLOY.md
 .gemini/
 .claude/
 .cursor/

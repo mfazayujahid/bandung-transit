@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.git/
+scripts/
+*.json
+!app/data/bandung_railway_track.json
+*.log

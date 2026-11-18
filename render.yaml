@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: bandung-transit-api
+    runtime: docker
+    rootDir: bandung-transit-api
+    plan: free
+    region: singapore
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: AUTO_SEED_ON_EMPTY
+        value: "true"

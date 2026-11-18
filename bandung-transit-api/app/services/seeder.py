@@ -20,7 +20,7 @@ TRANSFER_SQL = text("""
         JOIN stops b
             ON a.id <> b.id
             AND a.corridor_id <> b.corridor_id
-        WHERE ST_DWithin(a.geom::geography, b.geom::geography, 250)
+        WHERE ST_DWithin(a.geom::geography, b.geom::geography, 320)
         ON CONFLICT (from_stop_id, to_stop_id) DO NOTHING;
     """)
 

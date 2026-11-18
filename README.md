@@ -9,6 +9,7 @@ bandung-transit/
 ├── bandung-transit-api/   # Backend: FastAPI, PostGIS, NetworkX, Live Telemetry
 ├── bandung-transit-ui/    # Frontend: React 19, TypeScript, Vite, MapLibre GL
 ├── scripts/dev.mjs        # Single-command runner for both API and UI
+├── render.yaml            # Render Blueprint (free tier FastAPI + WebSocket backend)
 └── package.json           # Root monorepo scripts
 ```
 
@@ -18,7 +19,7 @@ bandung-transit/
 - **Python** 3.12+ with [`uv`](https://docs.astral.sh/uv/)
 - **PostgreSQL** with **PostGIS** extension
 
-## Quick Start
+## Quick Start (Local Development)
 
 1. **Configure environment variables**:
    ```bash
@@ -43,6 +44,15 @@ bandung-transit/
      npm run dev:https
      ```
      Open `https://localhost:5173` (or `https://<your-lan-ip>:5173` on your phone and accept the one-time local dev certificate prompt).
+
+## Free Cloud Deployment ($0/month — Supabase + FastAPI Cloud + Vercel + Custom Domain)
+
+Full copy-paste step-by-step deployment instructions — including connecting a custom domain from **IDwebhost** — are in **[DEPLOY.md](./DEPLOY.md)**.
+
+Quick summary:
+- **Database**: Supabase (Free PostgreSQL + PostGIS, Singapore region)
+- **Backend**: FastAPI Cloud Hobby Plan (`cd bandung-transit-api && uv run python -m fastapi_cli deploy`) — or Render Free Tier via [`render.yaml`](./render.yaml)
+- **Frontend**: Vercel (`Root Directory: bandung-transit-ui`, `VITE_API_BASE=https://api.yourdomain.com`)
 
 ## Useful Commands
 
