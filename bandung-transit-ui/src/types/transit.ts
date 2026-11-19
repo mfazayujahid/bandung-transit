@@ -52,6 +52,25 @@ export interface IncomingBus {
     upcoming_buses?: UpcomingBusItem[];
 }
 
+export interface FareBreakdownItem {
+    name: string;
+    type: 'BUS' | 'TRAIN';
+    fare_idr: number;
+    fare_formatted: string;
+    operator: string;
+    payment_methods?: string[];
+}
+
+export interface FareInfo {
+    total_fare_idr: number;
+    total_fare_formatted: string;
+    discounted_fare_idr?: number;
+    discounted_fare_formatted?: string;
+    fare_breakdown: FareBreakdownItem[];
+    payment_summary?: string;
+    note?: string;
+}
+
 export interface TripLeg {
     type: 'WALK' | 'TRANSFER_WALK' | 'BUS' | 'TRAIN';
     instruction?: string;
@@ -71,11 +90,105 @@ export interface TripLeg {
     geometry?: LineString;
     incoming_bus?: IncomingBus;
     incoming_vehicle?: IncomingBus;
+    fare_idr?: number;
+    fare_formatted?: string;
+    operator?: string;
+    payment_methods?: string[];
 }
 
 export interface TripPlan {
     total_duration_minutes: number;
+    total_duration_seconds?: number;
+    total_fare_idr?: number;
+    total_fare_formatted?: string;
+    fare?: FareInfo;
     legs: TripLeg[];
+}
+
+/**
+ * Helper to retrieve robust fare information with graceful client-side fallback.
+ */
+export function getTripFareInfo(trip: TripPlan | null | undefined): {
+    amount: number;
+    formatted: string;
+    discountedAmount?: number;
+    discountedFormatted?: string;
+    breakdown: FareBreakdownItem[];
+    paymentSummary: string;
+    note?: string;
+} {
+    if (!trip) {
+        return {
+            amount: 0,
+            formatted: 'Rp 0',
+            breakdown: [],
+            paymentSummary: 'Non-tunai',
+        };
+    }
+    if (trip.fare && trip.fare.total_fare_formatted) {
+        return {
+            amount: trip.fare.total_fare_idr || 0,
+            formatted: trip.fare.total_fare_formatted,
+            discountedAmount: trip.fare.discounted_fare_idr,
+            discountedFormatted: trip.fare.discounted_fare_formatted,
+            breakdown: trip.fare.fare_breakdown || [],
+            paymentSummary: trip.fare.payment_summary || 'Non-tunai (QRIS / Uang Elektronik)',
+            note: trip.fare.note,
+        };
+    }
+    if (trip.total_fare_formatted && trip.total_fare_idr !== undefined) {
+        return {
+            amount: trip.total_fare_idr,
+            formatted: trip.total_fare_formatted,
+            breakdown: [],
+            paymentSummary: 'Non-tunai (QRIS / Uang Elektronik)',
+        };
+    }
+
+    // Client-side fallback calculation from legs
+    let total = 0;
+    let discTotal = 0;
+    const breakdown: FareBreakdownItem[] = [];
+    for (const leg of trip.legs || []) {
+        if (leg.type === 'TRAIN') {
+            const f = leg.fare_idr ?? 5000;
+            total += f;
+            discTotal += 5000;
+            breakdown.push({
+                name: leg.corridor_name || 'Commuter Line Bandung Raya',
+                type: 'TRAIN',
+                fare_idr: f,
+                fare_formatted: `Rp ${f.toLocaleString('id-ID')}`,
+                operator: 'KAI Commuter',
+                payment_methods: leg.payment_methods || ['KMT', 'E-Money', 'Access by KAI'],
+            });
+        } else if (leg.type === 'BUS') {
+            const f = leg.fare_idr ?? 4900;
+            total += f;
+            discTotal += 2000;
+            breakdown.push({
+                name: `Bus ${leg.corridor_code || ''} (${leg.corridor_name || ''})`,
+                type: 'BUS',
+                fare_idr: f,
+                fare_formatted: `Rp ${f.toLocaleString('id-ID')}`,
+                operator: 'Metro Jabar Trans / Teman Bus',
+                payment_methods: leg.payment_methods || ['QRIS', 'E-Money'],
+            });
+        }
+    }
+
+    const formatted = total === 0 ? 'Gratis' : `Rp ${total.toLocaleString('id-ID')}`;
+    const discFormatted = discTotal === 0 ? undefined : `Rp ${discTotal.toLocaleString('id-ID')}`;
+
+    return {
+        amount: total,
+        formatted,
+        discountedAmount: discTotal,
+        discountedFormatted: discFormatted,
+        breakdown,
+        paymentSummary: 'Non-tunai (QRIS / Uang Elektronik / KMT)',
+        note: 'Tarif bus MJT Rp 4.900 (Rp 2.000 tarif khusus pelajar/lansia); Kereta Commuter Line Rp 5.000 (PSO).',
+    };
 }
 
 export interface LiveBusFeature {

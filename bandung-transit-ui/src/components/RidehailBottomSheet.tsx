@@ -9,10 +9,11 @@ import {
     Loader2,
     Clock,
     Train,
+    Banknote,
 } from 'lucide-react';
 import { TripTimeline } from './TripTimeline';
 import { CORRIDOR_BRAND_COLORS } from '../constants/bandungLandmarks';
-import type { LocationPoint, SnapState, TripPlan } from '../types/transit';
+import { type LocationPoint, type SnapState, type TripPlan, getTripFareInfo } from '../types/transit';
 
 interface RidehailBottomSheetProps {
     trip: TripPlan | null;
@@ -87,6 +88,7 @@ export const RidehailBottomSheet: React.FC<RidehailBottomSheetProps> = ({
     // Find first incoming vehicle (train or bus) for collapsed glance
     const incomingVehicle = trip?.legs?.find((l) => l.incoming_bus)?.incoming_bus;
     const transitLegs = trip?.legs?.filter((l) => l.type === 'BUS' || l.type === 'TRAIN') || [];
+    const fareInfo = getTripFareInfo(trip);
 
     return (
         <div
@@ -226,12 +228,21 @@ export const RidehailBottomSheet: React.FC<RidehailBottomSheetProps> = ({
                         onClick={() => onChangeSnapState('HALF')}
                         className="px-4 pb-2.5 pt-1 flex items-center justify-between cursor-pointer md:hidden"
                     >
-                        <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
                             <div className="flex items-center gap-1.5 shrink-0">
                                 <Clock className="w-4 h-4 text-blue-600" />
                                 <span className="text-base font-black text-slate-900 tracking-tight">
                                     {trip.total_duration_minutes} min
                                 </span>
+                            </div>
+
+                            {/* Estimated Total Fare Badge */}
+                            <div
+                                data-testid="mobile-glance-fare"
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 shrink-0 shadow-2xs"
+                            >
+                                <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="text-xs font-black tracking-tight">{fareInfo.formatted}</span>
                             </div>
 
                             <div className="flex items-center gap-1 overflow-hidden">
@@ -256,7 +267,7 @@ export const RidehailBottomSheet: React.FC<RidehailBottomSheetProps> = ({
                             </div>
 
                             {incomingVehicle && (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border truncate ${
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border truncate hidden sm:inline-block ${
                                     incomingVehicle.is_train
                                         ? 'bg-blue-50 text-blue-900 border-blue-200'
                                         : 'bg-emerald-50 text-emerald-800 border-emerald-200'
@@ -406,6 +417,7 @@ export const RidehailBottomSheet: React.FC<RidehailBottomSheetProps> = ({
                             destination={destination}
                             legs={trip.legs}
                             totalMinutes={trip.total_duration_minutes}
+                            trip={trip}
                         />
                     )}
 

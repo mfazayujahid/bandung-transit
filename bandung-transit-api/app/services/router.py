@@ -24,6 +24,13 @@ MAX_ACCESS_WALK_M = 800        # Primary walking radius from Point A or Point B 
 EXTENDED_ACCESS_WALK_M = 1500  # Fallback walking radius for residential/suburban areas
 
 
+def format_idr(amount: int) -> str:
+    """Format integer rupiah into standard Indonesian currency string (e.g. 4900 -> 'Rp 4.900')."""
+    if amount <= 0:
+        return "Gratis"
+    return f"Rp {amount:,}".replace(",", ".")
+
+
 def _best_access_distance_m(lng: float, lat: float, stop_info: dict) -> float:
     """
     Estimates walking distance from (lng, lat) to a stop using its active pedestrian
@@ -480,6 +487,10 @@ def plan_trip(
         "from_coords": [origin_lng, origin_lat],
         "to_coords": first_stop["coords"],
         "geometry": first_walk_route["geometry"],
+        "fare_idr": 0,
+        "fare_formatted": "Gratis",
+        "operator": "Jalan Kaki",
+        "payment_methods": [],
     })
 
     # 2. Transit Ride Legs + Transfer Walks
@@ -554,6 +565,15 @@ def plan_trip(
 
         total_seconds += wait_sec + ride_sec
 
+        if is_train:
+            fare_val = 5000
+            operator_name = "KAI Commuter"
+            pay_methods = ["KMT", "E-Money Bank (Flazz, TapCash, Brizzi, e-Money)", "QR Code Access by KAI"]
+        else:
+            fare_val = 4900
+            operator_name = "Metro Jabar Trans / Teman Bus"
+            pay_methods = ["QRIS", "E-Money Bank (Flazz, TapCash, Brizzi, e-Money)"]
+
         legs.append({
             "type": leg_type,
             "transit_mode": leg_type,
@@ -570,6 +590,10 @@ def plan_trip(
             "incoming_bus": incoming_vehicle,
             "incoming_vehicle": incoming_vehicle,
             "duration_seconds": wait_sec + ride_sec,
+            "fare_idr": fare_val,
+            "fare_formatted": format_idr(fare_val),
+            "operator": operator_name,
+            "payment_methods": pay_methods,
         })
 
         if idx < len(ride_groups) - 1:
@@ -595,6 +619,10 @@ def plan_trip(
                 "from_coords": alight_coords,
                 "to_coords": next_coords,
                 "geometry": transfer_walk_route["geometry"],
+                "fare_idr": 0,
+                "fare_formatted": "Gratis",
+                "operator": "Jalan Kaki",
+                "payment_methods": [],
             })
 
     # 3. Last-mile Egress Walk (entrance-aware for railway stations!)
@@ -623,10 +651,54 @@ def plan_trip(
         "from_coords": last_stop_coords,
         "to_coords": [dest_lng, dest_lat],
         "geometry": last_walk_route["geometry"],
+        "fare_idr": 0,
+        "fare_formatted": "Gratis",
+        "operator": "Jalan Kaki",
+        "payment_methods": [],
     })
+
+    # 4. Compute Total Estimated Fare & Detailed Breakdown
+    total_fare_idr = sum(leg.get("fare_idr", 0) for leg in legs)
+    discounted_fare_idr = 0
+    fare_breakdown = []
+
+    for leg in legs:
+        if leg["type"] == "TRAIN":
+            discounted_fare_idr += 5000  # KAI Commuter PSO flat fare
+            fare_breakdown.append({
+                "name": leg.get("corridor_name") or "Commuter Line Bandung Raya",
+                "type": "TRAIN",
+                "fare_idr": 5000,
+                "fare_formatted": format_idr(5000),
+                "operator": "KAI Commuter",
+                "payment_methods": leg.get("payment_methods", []),
+            })
+        elif leg["type"] == "BUS":
+            discounted_fare_idr += 2000  # Tarif khusus pelajar/mahasiswa/lansia/disabilitas
+            fare_breakdown.append({
+                "name": f"Bus {leg.get('corridor_code', '')} ({leg.get('corridor_name', '')})",
+                "type": "BUS",
+                "fare_idr": 4900,
+                "fare_formatted": format_idr(4900),
+                "operator": "Metro Jabar Trans / Teman Bus",
+                "payment_methods": leg.get("payment_methods", []),
+            })
+
+    fare_info = {
+        "total_fare_idr": total_fare_idr,
+        "total_fare_formatted": format_idr(total_fare_idr),
+        "discounted_fare_idr": discounted_fare_idr,
+        "discounted_fare_formatted": format_idr(discounted_fare_idr),
+        "fare_breakdown": fare_breakdown,
+        "payment_summary": "Non-tunai (QRIS / Uang Elektronik / KMT)",
+        "note": "Tarif bus MJT Rp 4.900 (Rp 2.000 tarif khusus pelajar/lansia); Kereta Commuter Line Rp 5.000 (PSO).",
+    }
 
     return {
         "total_duration_seconds": total_seconds,
         "total_duration_minutes": round(total_seconds / 60, 1),
+        "total_fare_idr": total_fare_idr,
+        "total_fare_formatted": format_idr(total_fare_idr),
+        "fare": fare_info,
         "legs": legs,
     }

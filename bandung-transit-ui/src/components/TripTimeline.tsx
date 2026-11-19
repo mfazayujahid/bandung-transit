@@ -6,15 +6,19 @@ import {
     Footprints,
     MapPin,
     Radio,
+    Banknote,
+    CreditCard,
 } from 'lucide-react';
 import { CORRIDOR_BRAND_COLORS } from '../constants/bandungLandmarks';
-import type { LocationPoint, TripLeg } from '../types/transit';
+import type { LocationPoint, TripLeg, TripPlan } from '../types/transit';
+import { getTripFareInfo } from '../types/transit';
 
 interface TripTimelineProps {
     origin: LocationPoint | null;
     destination: LocationPoint | null;
     legs: TripLeg[];
     totalMinutes: number;
+    trip?: TripPlan | null;
 }
 
 export const TripTimeline: React.FC<TripTimelineProps> = ({
@@ -22,45 +26,97 @@ export const TripTimeline: React.FC<TripTimelineProps> = ({
     destination,
     legs,
     totalMinutes,
+    trip,
 }) => {
+    const fareInfo = getTripFareInfo(trip || { total_duration_minutes: totalMinutes, legs });
+
     return (
         <div className="flex flex-col gap-3 py-1">
-            {/* Quick Trip Header Overview */}
-            <div className="bg-slate-100/90 rounded-xl p-3 flex items-center justify-between border border-slate-200">
-                <div className="flex items-center gap-2">
-                    <div className="p-2 bg-blue-600 text-white rounded-lg shadow-sm">
-                        <Clock className="w-4 h-4" />
+            {/* Quick Trip Header Overview (Duration & Total Fare) */}
+            <div className="bg-slate-50/95 rounded-2xl p-3.5 border border-slate-200/90 shadow-xs space-y-3">
+                {/* Duration & Fare Row */}
+                <div className="flex items-center justify-between gap-3">
+                    {/* Left: Duration */}
+                    <div className="flex items-center gap-2.5">
+                        <div className="p-2 bg-blue-600 text-white rounded-xl shadow-xs">
+                            <Clock className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Estimasi Waktu</div>
+                            <div className="text-xl font-black text-slate-900 tracking-tight">
+                                {totalMinutes} <span className="text-sm font-semibold text-slate-600">min</span>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <div className="text-xs font-medium text-slate-500">Estimated Travel Time</div>
-                        <div className="text-xl font-black text-slate-900 tracking-tight">
-                            {totalMinutes} <span className="text-sm font-semibold text-slate-600">min</span>
+
+                    {/* Divider */}
+                    <div className="h-8 w-px bg-slate-200" />
+
+                    {/* Right: Estimated Total Fare */}
+                    <div className="flex items-center gap-2.5 text-right">
+                        <div>
+                            <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Estimasi Tarif</div>
+                            <div className="text-xl font-black text-emerald-700 tracking-tight" data-testid="trip-total-fare">
+                                {fareInfo.formatted}
+                            </div>
+                        </div>
+                        <div className="p-2 bg-emerald-600 text-white rounded-xl shadow-xs">
+                            <Banknote className="w-4 h-4" />
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                    {legs
-                        .filter((leg) => leg.type === 'BUS' || leg.type === 'TRAIN')
-                        .map((leg, idx) => {
-                            const isTrain = leg.type === 'TRAIN';
-                            const corridorKey = leg.corridor_code || (isTrain ? 'CLR' : 'K1D');
-                            const brand = CORRIDOR_BRAND_COLORS[corridorKey] || {
-                                color: leg.color || (isTrain ? '#1e3a8a' : '#2563eb'),
-                                badgeText: corridorKey,
-                            };
-                            return (
-                                <span
-                                    key={idx}
-                                    style={{ backgroundColor: brand.color }}
-                                    className="px-2 py-0.5 rounded text-white text-[11px] font-bold shadow-xs flex items-center gap-1"
-                                >
-                                    {isTrain ? <Train className="w-3 h-3" /> : <Bus className="w-3 h-3" />}
-                                    {brand.badgeText}
-                                </span>
-                            );
-                        })}
+                {/* Corridors and Payment Info Strip */}
+                <div className="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    {/* Transit Line Badges with Fares */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        {legs
+                            .filter((leg) => leg.type === 'BUS' || leg.type === 'TRAIN')
+                            .map((leg, idx) => {
+                                const isTrain = leg.type === 'TRAIN';
+                                const corridorKey = leg.corridor_code || (isTrain ? 'CLR' : 'K1D');
+                                const brand = CORRIDOR_BRAND_COLORS[corridorKey] || {
+                                    color: leg.color || (isTrain ? '#1e3a8a' : '#2563eb'),
+                                    badgeText: corridorKey,
+                                };
+                                const legFare = leg.fare_formatted || (isTrain ? 'Rp 5.000' : 'Rp 4.900');
+                                return (
+                                    <span
+                                        key={idx}
+                                        style={{ backgroundColor: brand.color }}
+                                        className="px-2 py-0.5 rounded-lg text-white text-[11px] font-bold shadow-xs flex items-center gap-1.5"
+                                    >
+                                        {isTrain ? <Train className="w-3 h-3" /> : <Bus className="w-3 h-3" />}
+                                        <span>{brand.badgeText}</span>
+                                        <span className="bg-white/20 px-1 py-0.2 rounded text-[10px] font-semibold">
+                                            {legFare}
+                                        </span>
+                                    </span>
+                                );
+                            })}
+                    </div>
+
+                    {/* Payment Summary */}
+                    <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                        <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="truncate max-w-[200px]" title={fareInfo.paymentSummary}>
+                            {fareInfo.paymentSummary}
+                        </span>
+                    </div>
                 </div>
+
+                {/* Discounted Fare / Student Tip if available */}
+                {fareInfo.discountedFormatted && (
+                    <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[11px]">
+                        <span className="text-emerald-800 font-medium flex items-center gap-1.5">
+                            <span className="text-emerald-600 font-bold">✨ Pelajar / Lansia / Disabilitas:</span>
+                            <span className="font-bold text-emerald-900">{fareInfo.discountedFormatted}</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-1.5 py-0.5 rounded">
+                            Hemat Khusus
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Timeline Steps Container */}
@@ -96,9 +152,14 @@ export const TripTimeline: React.FC<TripTimelineProps> = ({
                                         <span className="flex items-center gap-1.5">
                                             {isTransfer ? 'Transfer Walk' : 'Walk to Station / Stop'}
                                         </span>
-                                        <span className="text-slate-500 font-normal">
-                                            {walkDurationMin} min ({leg.distance_meters ? `${Math.round(leg.distance_meters)}m` : 'nearby'})
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-500 font-normal">
+                                                {walkDurationMin} min ({leg.distance_meters ? `${Math.round(leg.distance_meters)}m` : 'nearby'})
+                                            </span>
+                                            <span className="text-[10px] font-bold text-slate-400 bg-slate-200/70 px-1.5 py-0.5 rounded">
+                                                Gratis
+                                            </span>
+                                        </div>
                                     </div>
                                     {leg.instruction && (
                                         <p className="text-[11px] text-slate-500 mt-0.5">{leg.instruction}</p>
@@ -131,10 +192,10 @@ export const TripTimeline: React.FC<TripTimelineProps> = ({
 
                             {/* Transit Card */}
                             <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs space-y-2.5">
-                                {/* Corridor and Direction */}
+                                {/* Corridor, Direction, Duration, and Fare */}
                                 <div className="flex items-start justify-between gap-2">
                                     <div>
-                                        <div className="flex items-center gap-1.5">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
                                             <span
                                                 style={{ backgroundColor: brand.color }}
                                                 className="px-2 py-0.5 rounded text-white text-[11px] font-bold flex items-center gap-1"
@@ -153,9 +214,14 @@ export const TripTimeline: React.FC<TripTimelineProps> = ({
                                         )}
                                     </div>
 
-                                    <span className="text-xs font-semibold text-slate-600 shrink-0">
-                                        ~{transitDurationMin} min
-                                    </span>
+                                    <div className="flex flex-col items-end shrink-0">
+                                        <span className="text-xs font-semibold text-slate-600">
+                                            ~{transitDurationMin} min
+                                        </span>
+                                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md mt-0.5">
+                                            {leg.fare_formatted || (isTrain ? 'Rp 5.000' : 'Rp 4.900')}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {/* Boarding and Alighting Info */}
@@ -173,6 +239,19 @@ export const TripTimeline: React.FC<TripTimelineProps> = ({
                                             Melewati {leg.stop_count} {isTrain ? 'stasiun' : 'halte'}
                                         </div>
                                     )}
+                                </div>
+
+                                {/* Operator & Payment Method Info */}
+                                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-[10.5px]">
+                                    <div className="flex items-center gap-1.5 text-slate-600 min-w-0">
+                                        <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                        <span className="truncate">
+                                            Bayar: <strong>{leg.payment_methods?.join(', ') || (isTrain ? 'KMT / E-Money / Access by KAI' : 'QRIS / E-Money')}</strong>
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 font-medium shrink-0">
+                                        {leg.operator || (isTrain ? 'KAI Commuter' : 'Metro Jabar Trans')}
+                                    </span>
                                 </div>
 
                                 {/* Live Vehicle Telemetry & Checkpoint-Synced Schedule Card (Train or Bus) */}
